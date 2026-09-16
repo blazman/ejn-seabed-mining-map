@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pacific seabed mining</title>
+<meta name="description" content="Where the Pacific seabed is licensed for mining, and where the reporting comes from.">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js"></script>
+<script src="config.js"></script>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0A171D;color:#E4EDEE}
+  #map{position:absolute;inset:0}
+  .panel{position:absolute;top:12px;left:12px;z-index:5;width:214px;
+    background:rgba(10,23,29,.9);border:1px solid #22414C;border-radius:5px;
+    padding:12px 14px;font-size:.78rem;backdrop-filter:blur(6px);
+    max-height:calc(100% - 24px);overflow:auto}
+  .panel h2{font-size:.66rem;text-transform:uppercase;letter-spacing:.12em;
+    color:#6E878C;margin:0 0 9px;font-weight:600}
+  .panel h2.sec{margin-top:14px;padding-top:12px;border-top:1px solid #22414C}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;user-select:none}
+  .row input{accent-color:#A8551F;margin:0}
+  .sw{width:13px;height:13px;border-radius:2px;flex:0 0 auto;border:1px solid rgba(255,255,255,.25)}
+  .ramp{margin-top:10px}
+  .ramp .bar{height:12px;border-radius:2px;
+    background:linear-gradient(90deg,#9FC9B4,#5FB0B8,#3990AD,#276E9C,#1E5288,#1B3C70,#1D2B56,#1B1B3C,#140F26)}
+  .ramp .lbl{display:flex;justify-content:space-between;font-size:.6rem;color:#6E878C;
+    margin-top:3px;font-family:ui-monospace,monospace}
+  .hint{font-size:.7rem;color:#6E878C;margin:0 0 8px;line-height:1.45}
+  .story-btn{display:block;width:100%;text-align:left;background:none;border:0;
+    border-left:2px solid #22414C;color:#C7D6D9;font:inherit;font-size:.78rem;
+    padding:5px 0 5px 9px;margin-bottom:2px;cursor:pointer}
+  .story-btn:hover,.story-btn.on{border-left-color:#A8551F;color:#fff}
+  .story-btn:focus-visible{outline:2px solid #A8551F;outline-offset:2px}
+  .story-btn small{display:block;color:#6E878C;font-size:.68rem}
+  #card{position:absolute;left:0;right:0;bottom:0;z-index:8;
+    background:rgba(16,38,48,.97);border-top:1px solid #22414C;padding:16px 18px 18px;
+    transform:translateY(110%);transition:transform .32s cubic-bezier(.2,.8,.3,1);
+    backdrop-filter:blur(8px)}
+  #card.up{transform:translateY(0)}
+  #card .inner{max-width:760px;margin:0 auto;position:relative}
+  #card .ph{height:120px;border:1px dashed #33525D;border-radius:4px;display:flex;
+    align-items:center;justify-content:center;color:#5B7780;font-size:.7rem;
+    letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+  #card img.hero{width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:12px;display:block}
+  #card .eyebrow{font-size:.66rem;text-transform:uppercase;letter-spacing:.14em;
+    color:#D98A4F;margin-bottom:5px}
+  #card h3{margin:0 0 4px;font-size:1.1rem;font-weight:600}
+  #card .byline{font-size:.8rem;color:#9FB6BA;margin-bottom:8px}
+  #card p{margin:0 0 10px;font-size:.88rem;line-height:1.55;color:#C7D6D9;max-width:62ch}
+  #card .note{color:#D98A4F;font-size:.82rem}
+  #card .link{display:inline-block;font-size:.78rem;color:#C7D6D9;border:1px solid #33525D;
+    border-radius:3px;padding:5px 11px;text-decoration:none}
+  #card a.link:hover{border-color:#A8551F;color:#fff}
+  #card .x{position:absolute;top:-4px;right:0;background:none;border:0;color:#6E878C;
+    font-size:1.3rem;cursor:pointer;line-height:1}
+  #credit{position:absolute;right:10px;bottom:6px;z-index:4;font-size:.62rem;color:#6E878C;
+    text-align:right;max-width:46%;line-height:1.4}
+  #credit a{color:#8FA9AE}
+  #boot{position:absolute;inset:0;z-index:30;display:flex;align-items:center;
+    justify-content:center;background:#0A171D;padding:28px;text-align:center}
+  #boot p{max-width:34rem;font-size:.9rem;line-height:1.6;color:#A3B8BC}
+  .mapboxgl-popup-content{background:#102630;color:#E4EDEE;font-size:.8rem;
+    border-radius:5px;padding:12px 14px}
+  .mapboxgl-popup-content b{display:block;font-size:.9rem;margin-bottom:4px}
+  .mapboxgl-popup-tip{border-top-color:#102630!important;border-bottom-color:#102630!important}
+  .mapboxgl-cooperative-gesture-screen{background:rgba(10,23,29,.72);backdrop-filter:blur(2px)}
+  .mapboxgl-cooperative-gesture-screen .mapboxgl-desktop-message,
+  .mapboxgl-cooperative-gesture-screen .mapboxgl-mobile-message{
+    font-family:inherit;font-size:.95rem;color:#E4EDEE}
+  @media (max-width:640px){
+    .panel{width:auto;right:12px;max-height:44%}
+    #card .ph{height:80px}
+    #credit{max-width:100%;left:10px;text-align:left;bottom:2px}
+  }
+  @media (prefers-reduced-motion:reduce){ #card{transition:none} }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="panel" id="panel" hidden>
+  <h2>ISA seabed, 2026</h2>
+  <label class="row"><input type="checkbox" id="t-exp" checked><span class="sw" style="background:#C97B3A"></span>Nodule contracts</label>
+  <label class="row"><input type="checkbox" id="t-pms" checked><span class="sw" style="background:#B8433A"></span>Sulphide contracts</label>
+  <label class="row"><input type="checkbox" id="t-crfc" checked><span class="sw" style="background:#8E5C8A"></span>Cobalt-crust contracts</label>
+  <label class="row"><input type="checkbox" id="t-apei" checked><span class="sw" style="background:#3FA98C"></span>APEIs (set aside)</label>
+  <label class="row"><input type="checkbox" id="t-res" checked><span class="sw" style="background:#6E7F86"></span>Reserved areas</label>
+  <div class="ramp"><div class="bar"></div><div class="lbl"><span>0 m</span><span>4 km</span><span>11 km</span></div></div>
+  <h2 class="sec">Stories</h2>
+  <p class="hint">Dashed lines run from where the decisions are made to the seabed they license.</p>
+  <div id="rail"></div>
+  <button class="story-btn" id="reset" style="border-left-color:transparent;color:#6E878C;margin-top:4px">← whole Pacific</button>
+</div>
+
+<div id="card"><div class="inner">
+  <button class="x" id="cardx" aria-label="Close">×</button>
+  <div id="c-media"></div>
+  <div class="eyebrow" id="c-loc"></div>
+  <h3 id="c-head"></h3>
+  <div class="byline" id="c-by"></div>
+  <p id="c-dek"></p>
+  <p class="note" id="c-note"></p>
+  <span id="c-link"></span>
+</div></div>
+
+<div id="credit">
+  Exploration contracts, reserved areas and APEIs: International Seabed Authority, 2026 ·
+  Bathymetry: GEBCO via Mapbox · Basemap © <a href="https://www.mapbox.com/about/maps/">Mapbox</a>,
+  © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+</div>
+
+<div id="boot"><p id="bootmsg">Loading the map…</p></div>
+
+<script>
+const CFG = window.SEABED_CONFIG || {};
+let map, DATA_SOURCE = 'seabed', STORIES = null, LEADERS = null, OFFMAP = {};
+
+const WANT = ['isa_exploration','isa_reserved','isa_apei','editorial','stories','leaders','leadertargets'];
+
+function fail(msg){
+  document.getElementById('boot').style.display = 'flex';
+  document.getElementById('bootmsg').innerHTML = msg;
+}
+
+async function start(){
+  if (!CFG.token || !CFG.token.startsWith('pk.'))
+    return fail('No Mapbox token. Add a public token (<code>pk.…</code>) to <code>config.js</code>.');
+  if (!CFG.style) return fail('No style URL in <code>config.js</code>.');
+
+  try {
+    const [s, l, o] = await Promise.all([
+      fetch('data/stories.geojson').then(r=>r.json()),
+      fetch('data/leader_lines.geojson').then(r=>r.json()),
+      fetch('data/leader_offmap.json').then(r=>r.json()).catch(()=>({}))
+    ]);
+    STORIES = s; LEADERS = l; OFFMAP = o;
+  } catch(e){ return fail('Could not load the story data: ' + e.message); }
+
+  mapboxgl.accessToken = CFG.token;
+  map = new mapboxgl.Map({
+    container:'map', style:CFG.style,
+    center:CFG.center || [-177,6], zoom:CFG.zoom || 1.7,
+    minZoom:1.2, maxZoom:8, projection:'mercator', renderWorldCopies:true,
+    cooperativeGestures:true,
+    locale:{
+      'CooperativeGesturesHandler.WindowsHelpText':'Use Ctrl + scroll to zoom the map',
+      'CooperativeGesturesHandler.MacHelpText':'Use ⌘ + scroll to zoom the map',
+      'CooperativeGesturesHandler.MobileHelpText':'Use two fingers to move the map'
+    }
+  });
+  map.addControl(new mapboxgl.NavigationControl({showCompass:false}),'bottom-right');
+  map.on('error', e => console.warn('[map]', e && e.error && e.error.message));
+  map.on('load', ready);
+}
+
+function ready(){
+  // Studio renames imported sources to their tileset URL, so find the source the
+  // data layers actually read rather than assuming it is still called "seabed".
+  const counts = {};
+  for (const L of map.getStyle().layers)
+    if (L['source-layer'] && WANT.includes(L['source-layer']))
+      counts[L.source] = (counts[L.source]||0) + 1;
+  DATA_SOURCE = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0] || 'seabed';
+
+  document.getElementById('boot').style.display = 'none';
+  document.getElementById('panel').hidden = false;
+
+  const setRes = () => {
+    const ids = {PMN:'t-exp', PMS:'t-pms', CRFC:'t-crfc'};
+    const active = Object.keys(ids).filter(c => document.getElementById(ids[c]).checked);
+    ['isa-exploration-fill','isa-exploration-line'].forEach(id =>
+      map.getLayer(id) && map.setFilter(id, ['in',['get','res_code'],['literal',active]]));
+  };
+  ['t-exp','t-pms','t-crfc'].forEach(id => document.getElementById(id).onchange = setRes);
+  const vis = (layer, on) => map.getLayer(layer) &&
+    map.setLayoutProperty(layer,'visibility', on ? 'visible' : 'none');
+  document.getElementById('t-apei').onchange = e => vis('isa-apei', e.target.checked);
+  document.getElementById('t-res').onchange  = e => vis('isa-relinquished-placeholder', e.target.checked);
+
+  map.on('click','isa-exploration-fill', e => {
+    const p = e.features[0].properties;
+    new mapboxgl.Popup({closeButton:false}).setLngLat(e.lngLat).setHTML(
+      `<b>${p.contractor}</b>Sponsoring state: ${p.state}<br>${p.resource}<br>` +
+      `${Number(p.AreaKM2).toLocaleString()} km² · ${p.blocks} blocks<br>` +
+      `<span style="color:#6E878C">${p.ContractID}</span>`).addTo(map);
+  });
+  ['isa-exploration-fill','story-dot','story-halo'].forEach(id=>{
+    if (!map.getLayer(id)) return;
+    map.on('mouseenter',id,()=>map.getCanvas().style.cursor='pointer');
+    map.on('mouseleave',id,()=>map.getCanvas().style.cursor='');
+  });
+
+  const rail = document.getElementById('rail');
+  STORIES.features.forEach((f,i)=>{
+    const b = document.createElement('button');
+    b.className='story-btn'; b.dataset.i=i;
+    b.innerHTML = `${f.properties.country}<small>${f.properties.reporter}</small>`;
+    b.onclick = () => openStory(i);
+    rail.appendChild(b);
+  });
+  ['story-dot','story-halo'].forEach(id => map.getLayer(id) && map.on('click',id, e=>{
+    const sid = e.features[0].properties.id;
+    openStory(STORIES.features.findIndex(f=>f.properties.id===sid));
+  }));
+
+  document.getElementById('cardx').onclick = closeStory;
+  document.getElementById('reset').onclick = () => {
+    closeStory();
+    map.easeTo({center:CFG.center||[-177,6], zoom:CFG.zoom||1.7, duration:1100});
+  };
+}
+
+function framePadding(){
+  const card = document.getElementById('card');
+  const wide = window.innerWidth > 640;
+  return { top:60, left: wide ? 250 : 24, right:44,
+           bottom: Math.min((card ? card.offsetHeight : 220) + 28,
+                            Math.round(window.innerHeight * 0.5)) };
+}
+
+function openStory(i){
+  if (i < 0) return;
+  const f = STORIES.features[i], p = f.properties;
+
+  document.getElementById('c-loc').textContent  = p.location;
+  document.getElementById('c-head').textContent = p.headline;
+  document.getElementById('c-by').textContent   = 'By ' + p.reporter;
+  document.getElementById('c-dek').textContent  = p.dek;
+
+  const media = document.getElementById('c-media');
+  media.innerHTML = p.image
+    ? `<img class="hero" src="${p.image}" alt="">`
+    : '<div class="ph">Featured image TK</div>';
+
+  const link = document.getElementById('c-link');
+  link.innerHTML = p.url
+    ? `<a class="link" href="${p.url}" target="_blank" rel="noopener">Read the story</a>`
+    : '<span class="link" style="color:#6E878C">Story link TK</span>';
+
+  const mine = LEADERS.features.filter(l => l.properties.story === p.id);
+  const off  = OFFMAP[p.id] || [];
+  const note = document.getElementById('c-note');
+  if (mine.length || off.length){
+    const km2 = mine.reduce((s,l)=>s+l.properties.km2,0) + off.reduce((s,o)=>s+o[1],0);
+    const total = mine.length + off.length;
+    let t = `${p.country} holds ${total} ISA exploration contract${total>1?'s':''}` +
+            ` covering ${km2.toLocaleString()} km² of international seabed.`;
+    if (mine.length) t += ` ${mine.length} traced above`;
+    if (off.length)  t += `${mine.length?'; ':' '}${off.length} on the Indian Ocean ridges, beyond this map`;
+    note.textContent = t + '.';
+  } else {
+    note.textContent = `${p.country} holds no ISA exploration contract — the reason there is no line from this pin.`;
+  }
+
+  if (map.getLayer('leader-line-active')){
+    map.setFilter('leader-line-active',   ['==',['get','story'], p.id]);
+    map.setFilter('leader-target-active', ['==',['get','story'], p.id]);
+  }
+
+  document.getElementById('card').classList.add('up');
+  document.querySelectorAll('.story-btn').forEach(b => b.classList.toggle('on', b.dataset.i == i));
+
+  const targets = LEADERS.features.filter(l => l.properties.story === p.id)
+    .map(l => l.geometry.coordinates[l.geometry.coordinates.length - 1]);
+  if (targets.length){
+    const b = new mapboxgl.LngLatBounds(f.geometry.coordinates, f.geometry.coordinates);
+    targets.forEach(c => b.extend(c));
+    requestAnimationFrame(() =>
+      map.fitBounds(b, {padding: framePadding(), duration:1400, maxZoom:5}));
+  } else {
+    const pad = framePadding();
+    map.easeTo({center:f.geometry.coordinates, zoom:4.2,
+                offset:[(pad.left-pad.right)/2, -(pad.bottom-pad.top)/2], duration:1300});
+  }
+}
+
+function closeStory(){
+  document.getElementById('card').classList.remove('up');
+  document.querySelectorAll('.story-btn').forEach(b => b.classList.remove('on'));
+  if (map && map.getLayer('leader-line-active')){
+    map.setFilter('leader-line-active',   ['==',['get','story'],'__none__']);
+    map.setFilter('leader-target-active', ['==',['get','story'],'__none__']);
+  }
+}
+
+window.addEventListener('resize', ()=>{
+  const on = document.querySelector('.story-btn.on');
+  if (on && document.getElementById('card').classList.contains('up')) openStory(+on.dataset.i);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStory(); });
+
+// let an embedding page size the iframe if it wants to
+function postHeight(){
+  try { parent.postMessage({type:'seabedmap:height',
+        height:document.documentElement.scrollHeight}, '*'); } catch(e){}
+}
+window.addEventListener('load', postHeight);
+window.addEventListener('resize', postHeight);
+
+start();
+</script>
+</body>
+</html>

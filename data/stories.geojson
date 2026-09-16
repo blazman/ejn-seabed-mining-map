@@ -1,0 +1,37 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{
+  "id":"jp-minamitorishima","reporter":"Kaori Kohyama","country":"Japan",
+  "location":"Minamitorishima (Marcus Island), Japan",
+  "headline":"HEADLINE TK","dek":"Japan's planned deep-sea mining and the rare-earth-rich seabed mud around Minamitorishima.",
+  "url":"","image":"",
+  "why":"The story is centred on Japan's planned deep-sea mining and rare-earth-rich seabed mud near Minamitorishima."},
+ "geometry":{"type":"Point","coordinates":[153.9667,24.3000]}},
+{"type":"Feature","properties":{
+  "id":"ck-rarotonga","reporter":"Losirene Lacanivalu","country":"Cook Islands",
+  "location":"Rarotonga, Cook Islands",
+  "headline":"HEADLINE TK","dek":"The national debate over seabed minerals, decided from Rarotonga.",
+  "url":"","image":"",
+  "why":"Most political and regulatory decisions are made from Rarotonga, the central reference point for the national debate."},
+ "geometry":{"type":"Point","coordinates":[-159.7781,-21.2350]}},
+{"type":"Feature","properties":{
+  "id":"kr-seoul","reporter":"Grace Moon","country":"South Korea",
+  "location":"Seoul, South Korea",
+  "headline":"HEADLINE TK","dek":"Government policy, corporate investment and national strategy.",
+  "url":"","image":"",
+  "why":"The story focuses on government policy, corporate investment and national strategy; Seoul is the logical focal point."},
+ "geometry":{"type":"Point","coordinates":[126.9780,37.5665]}},
+{"type":"Feature","properties":{
+  "id":"fj-suva","reporter":"Sera Tikotikovatu-Sefeti","country":"Fiji",
+  "location":"Suva, Fiji",
+  "headline":"HEADLINE TK","dek":"Fiji's moratorium, and the advocacy behind it.",
+  "url":"","image":"",
+  "why":"Fiji's moratorium is a national policy story; Suva is the centre of government and advocacy activity."},
+ "geometry":{"type":"Point","coordinates":[178.4253,-18.1368]}},
+{"type":"Feature","properties":{
+  "id":"cn-zhoushan","reporter":"Ye Yuan (June) and Tim Wu","country":"China",
+  "location":"Zhoushan, Zhejiang, China",
+  "headline":"HEADLINE TK","dek":"The shipbuilding and maritime hub behind China's seabed-mining logistics chain.",
+  "url":"","image":"",
+  "why":"Zhoushan is a principal shipbuilding and maritime hub tied to China's seabed-mining logistics chain."},
+ "geometry":{"type":"Point","coordinates":[122.2049,29.9887]}}
+]}
