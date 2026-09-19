@@ -9,13 +9,14 @@
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.9.0/mapbox-gl.js"></script>
 <script src="config.js"></script>
 <style>
-  html,body{margin:0;height:100%;overflow:hidden;
+  html,body{margin:0;height:100%;overflow:clip;
     font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0A171D;color:#E4EDEE}
   #map{position:absolute;inset:0}
-  .panel{position:absolute;top:12px;left:12px;z-index:5;width:214px;
+  .panel{position:absolute;top:12px;left:12px;z-index:5;width:244px;
     background:rgba(10,23,29,.9);border:1px solid #22414C;border-radius:5px;
     padding:12px 14px;font-size:.78rem;backdrop-filter:blur(6px);
-    max-height:calc(100% - 24px);overflow:auto}
+    max-height:calc(100% - 24px);overflow:auto;box-sizing:border-box}
+  body.story-open .panel{max-height:calc(50% - 24px)}
   .panel h2{font-size:.66rem;text-transform:uppercase;letter-spacing:.12em;
     color:#6E878C;margin:0 0 9px;font-weight:600}
   .panel h2.sec{margin-top:14px;padding-top:12px;border-top:1px solid #22414C}
@@ -36,9 +37,11 @@
   .story-btn small{display:block;color:#6E878C;font-size:.68rem}
   #card{position:absolute;left:0;right:0;bottom:0;z-index:8;
     background:rgba(16,38,48,.97);border-top:1px solid #22414C;padding:16px 18px 18px;
-    transform:translateY(110%);transition:transform .32s cubic-bezier(.2,.8,.3,1);
+    box-sizing:border-box;max-height:50%;overflow-y:auto;
+    visibility:hidden;transform:translateY(110%);
+    transition:transform .32s cubic-bezier(.2,.8,.3,1),visibility .32s;
     backdrop-filter:blur(8px)}
-  #card.up{transform:translateY(0)}
+  #card.up{visibility:visible;transform:translateY(0)}
   #card .inner{max-width:760px;margin:0 auto;position:relative}
   #card .ph{height:120px;border:1px dashed #33525D;border-radius:4px;display:flex;
     align-items:center;justify-content:center;color:#5B7780;font-size:.7rem;
@@ -71,8 +74,13 @@
     font-family:inherit;font-size:.95rem;color:#E4EDEE}
   @media (max-width:640px){
     .panel{width:auto;right:12px;max-height:44%}
+    body.story-open .panel{max-height:25%}
     #card .ph{height:80px}
     #credit{max-width:100%;left:10px;text-align:left;bottom:2px}
+  }
+  @media (max-width:640px) and (max-height:500px){
+    body.story-open .panel{max-height:20%}
+    #card{max-height:40%}
   }
   @media (prefers-reduced-motion:reduce){ #card{transition:none} }
 </style>
@@ -116,6 +124,7 @@
 <script>
 const CFG = window.SEABED_CONFIG || {};
 let map, DATA_SOURCE = 'seabed', STORIES = null, LEADERS = null, OFFMAP = {};
+let activeStory = -1, focusFrame = 0, focusDuration = 0;
 
 const WANT = ['isa_exploration','isa_reserved','isa_apei','editorial','stories','leaders','leadertargets'];
 
@@ -125,6 +134,10 @@ function fail(msg){
 }
 
 async function start(){
+  if (window.location.protocol === 'file:')
+    return fail('This map needs a web server to load its story files. ' +
+      'Open the local preview address supplied by your server, or the published website, ' +
+      'instead of opening <code>index.html</code> directly.');
   if (!CFG.token || !CFG.token.startsWith('pk.'))
     return fail('No Mapbox token. Add a public token (<code>pk.…</code>) to <code>config.js</code>.');
   if (!CFG.style) return fail('No style URL in <code>config.js</code>.');
@@ -142,7 +155,7 @@ async function start(){
   map = new mapboxgl.Map({
     container:'map', style:CFG.style,
     center:CFG.center || [-177,6], zoom:CFG.zoom || 1.7,
-    minZoom:1.2, maxZoom:8, projection:'mercator', renderWorldCopies:true,
+    minZoom:0, maxZoom:8, projection:'mercator', renderWorldCopies:true,
     cooperativeGestures:true,
     locale:{
       'CooperativeGesturesHandler.WindowsHelpText':'Use Ctrl + scroll to zoom the map',
@@ -214,10 +227,37 @@ function ready(){
 
 function framePadding(){
   const card = document.getElementById('card');
+  const panel = document.getElementById('panel');
   const wide = window.innerWidth > 640;
-  return { top:60, left: wide ? 250 : 24, right:44,
-           bottom: Math.min((card ? card.offsetHeight : 220) + 28,
-                            Math.round(window.innerHeight * 0.5)) };
+  const gap = !wide && window.innerHeight <= 500 ? 16 : 24;
+  return {
+    top: wide ? gap : panel.offsetTop + panel.offsetHeight + gap,
+    left: wide ? panel.offsetLeft + panel.offsetWidth + gap : gap,
+    right: gap,
+    // Measure the final drawer size even during its slide animation.
+    bottom: card.offsetHeight + gap
+  };
+}
+
+function scheduleStoryFocus(duration = 0){
+  if (activeStory < 0) return;
+  focusDuration = Math.max(focusDuration, duration);
+  if (focusFrame) return;
+  focusFrame = requestAnimationFrame(() => {
+    focusFrame = 0;
+    const duration = focusDuration;
+    focusDuration = 0;
+    if (activeStory < 0) return;
+    const f = STORIES.features[activeStory];
+    const targets = LEADERS.features.filter(l => l.properties.story === f.properties.id)
+      .map(l => l.geometry.coordinates[l.geometry.coordinates.length - 1]);
+    const bounds = new mapboxgl.LngLatBounds(f.geometry.coordinates, f.geometry.coordinates);
+    targets.forEach(c => bounds.extend(c));
+    // Frame linked stories and single pins alike, without retaining padding
+    // for the next story or the whole-Pacific view.
+    map.fitBounds(bounds, {padding:framePadding(), retainPadding:false,
+      duration, maxZoom:targets.length ? 5 : 4.2, pitch:0});
+  });
 }
 
 function openStory(i){
@@ -260,23 +300,21 @@ function openStory(i){
   }
 
   document.getElementById('card').classList.add('up');
+  document.getElementById('card').scrollTop = 0;
+  document.body.classList.add('story-open');
+  activeStory = i;
   document.querySelectorAll('.story-btn').forEach(b => b.classList.toggle('on', b.dataset.i == i));
 
-  const targets = LEADERS.features.filter(l => l.properties.story === p.id)
-    .map(l => l.geometry.coordinates[l.geometry.coordinates.length - 1]);
-  if (targets.length){
-    const b = new mapboxgl.LngLatBounds(f.geometry.coordinates, f.geometry.coordinates);
-    targets.forEach(c => b.extend(c));
-    requestAnimationFrame(() =>
-      map.fitBounds(b, {padding: framePadding(), duration:1400, maxZoom:5}));
-  } else {
-    const pad = framePadding();
-    map.easeTo({center:f.geometry.coordinates, zoom:4.2,
-                offset:[(pad.left-pad.right)/2, -(pad.bottom-pad.top)/2], duration:1300});
-  }
+  scheduleStoryFocus(1400);
 }
 
 function closeStory(){
+  activeStory = -1;
+  cancelAnimationFrame(focusFrame);
+  focusFrame = 0;
+  focusDuration = 0;
+  if (map) map.stop();
+  document.body.classList.remove('story-open');
   document.getElementById('card').classList.remove('up');
   document.querySelectorAll('.story-btn').forEach(b => b.classList.remove('on'));
   if (map && map.getLayer('leader-line-active')){
@@ -285,10 +323,9 @@ function closeStory(){
   }
 }
 
-window.addEventListener('resize', ()=>{
-  const on = document.querySelector('.story-btn.on');
-  if (on && document.getElementById('card').classList.contains('up')) openStory(+on.dataset.i);
-});
+// Images, wrapped text and iframe resizing can change the usable map area.
+const layoutObserver = new ResizeObserver(() => scheduleStoryFocus());
+['map','panel','card'].forEach(id => layoutObserver.observe(document.getElementById(id)));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeStory(); });
 
 // let an embedding page size the iframe if it wants to
