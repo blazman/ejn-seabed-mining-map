@@ -176,6 +176,7 @@ function ready(){
     if (L['source-layer'] && WANT.includes(L['source-layer']))
       counts[L.source] = (counts[L.source]||0) + 1;
   DATA_SOURCE = Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0] || 'seabed';
+  labelMinamitorishima();
 
   document.getElementById('boot').style.display = 'none';
   document.getElementById('panel').hidden = false;
@@ -223,6 +224,39 @@ function ready(){
     closeStory();
     map.easeTo({center:CFG.center||[-177,6], zoom:CFG.zoom||1.7, duration:1100});
   };
+}
+
+function labelMinamitorishima(){
+  const island = STORIES.features.find(f => f.properties.id === 'jp-minamitorishima');
+  if (!island) return;
+  const labels = map.getStyle().layers.find(l => l.id === 'story-label');
+
+  // Replace both the country-only story label and the duplicate place label.
+  const exclude = (id, condition) => {
+    if (!map.getLayer(id)) return;
+    const filter = map.getFilter(id);
+    map.setFilter(id, filter ? ['all', filter, condition] : condition);
+  };
+  exclude('story-label', ['!=', ['get','id'], island.properties.id]);
+  exclude('editorial-place', ['!', ['any',
+    ['in', 'Minamitorishima', ['get','name']],
+    ['in', 'Marcus Island', ['get','name']]
+  ]]);
+
+  // A local point keeps the label independent of the hosted tiles' zoom range.
+  map.addSource('minamitorishima-label', {type:'geojson', data:island});
+  map.addLayer({
+    id:'minamitorishima-label', type:'symbol', source:'minamitorishima-label',
+    minzoom:0, maxzoom:24,
+    layout:{
+      ...labels?.layout,
+      'text-field':island.properties.location.replace(' (', '\n('),
+      'text-size':labels?.layout?.['text-size'] || 12,
+      'text-offset':[0,1.4], 'text-anchor':'top', 'text-max-width':20,
+      'text-allow-overlap':true, 'visibility':'visible'
+    },
+    paint:labels?.paint || {'text-color':'#F4E3D2', 'text-halo-color':'#140F26', 'text-halo-width':1.5}
+  });
 }
 
 function framePadding(){
